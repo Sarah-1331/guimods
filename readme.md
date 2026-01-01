@@ -27,3 +27,18 @@ chmod +x /data/custom_gui_patch.sh
 
 # Run the installer
 bash /data/custom_gui_patch.sh
+
+
+
+🗑️ Uninstall / Reset
+
+To remove the custom overlay and revert to the original status bar:
+
+# Stop the GUI
+svc -t /service/gui-v2
+
+# Remove the overlay
+rm -rf /data/apps/overlay-fs/data/widgets-overlay
+
+# Restart the GUI
+svc -t /service/start-gui
