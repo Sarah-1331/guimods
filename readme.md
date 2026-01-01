@@ -1,11 +1,19 @@
-# Venus Custom Sensors - AC L1 Publisher
+# Venus OS Widgets Overlay Installer
 
-This repository publishes AC L1 Voltage and Current on the Venus OS DBus so VeQuickItem or other UIs can display them.
+This repository contains a **ready-to-run installer** to safely apply custom edits to Venus OS widgets (`AcInputWidget.qml` and `AcLoadsWidget.qml`) using an overlay filesystem.  
+The original system files are **never modified**.
+
+## Features
+
+- Creates an overlay for `/opt/victronenergy/gui-v2/Victron/VenusOS/components/widgets`
+- Inserts custom blocks in the correct locations in both widgets
+- Safely copies original files into the overlay
+- Automatically restarts the GUI to apply changes
 
 ## Installation
 
-```bash
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
-cd YOUR_REPO
-chmod +x install.sh
-./install.sh
+1. Copy `install_widgets_overlay.sh` to your Venus OS system, e.g.:
+
+chmod +x install_widgets_overlay.sh
+bash install_widgets_overlay.sh
+
