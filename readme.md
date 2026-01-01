@@ -12,8 +12,9 @@ The original system files are **never modified**.
 
 ## Installation
 
-1. Copy `install_widgets_overlay.sh` to your Venus OS system, e.g.:
+wget https://raw.githubusercontent.com/Sarah-1331/guimods/main/install_widgets_overlay.sh -O /data/custom_gui_patch.sh
 
 chmod +x install_widgets_overlay.sh
-bash install_widgets_overlay.sh
+
+bash /data/custom_gui_patch.sh
 
