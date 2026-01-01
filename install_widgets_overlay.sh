@@ -1,6 +1,6 @@
 #!/bin/bash
 # Venus OS Widgets Overlay Installer - robust version
-# Inserts edit blocks into overlay files and restarts GUI
+# Installs overlay-fs if needed, then applies custom GUI edits safely
 
 OVERLAY_NAME="widgets-overlay"
 OVERLAY_BASE="/data/apps/overlay-fs/data/$OVERLAY_NAME"
@@ -8,27 +8,42 @@ UPPER="$OVERLAY_BASE/upper"
 WORK="$OVERLAY_BASE/work"
 TARGET="/opt/victronenergy/gui-v2/Victron/VenusOS/components/widgets"
 
-echo "🚀 Starting Widgets Overlay Installer..."
+echo "🚀 Starting Venus OS Widgets Overlay Installer..."
 
 # ------------------------------
-# 1️⃣ Add overlay
+# 1️⃣ Check for overlay-fs
+# ------------------------------
+if [ ! -d /data/apps/overlay-fs ]; then
+    echo "⚠ overlay-fs not found. Installing overlay-fs..."
+    
+    wget -q https://raw.githubusercontent.com/victronenergy/venus-overlay-fs/main/install.sh -O /data/install-overlay-fs.sh
+    chmod +x /data/install-overlay-fs.sh
+    bash /data/install-overlay-fs.sh
+    
+    echo "✅ overlay-fs installed."
+else
+    echo "✅ overlay-fs already installed."
+fi
+
+# ------------------------------
+# 2️⃣ Add overlay for widgets
 # ------------------------------
 bash /data/apps/overlay-fs/add-app-and-directory.sh "$OVERLAY_NAME" "$TARGET"
 
 # ------------------------------
-# 2️⃣ Create overlay directories
+# 3️⃣ Create overlay directories
 # ------------------------------
 mkdir -p "$UPPER" "$WORK"
 
 # ------------------------------
-# 3️⃣ Mount overlay manually
+# 4️⃣ Mount overlay manually
 # ------------------------------
 mount -t overlay overlay \
   -o lowerdir="$TARGET",upperdir="$UPPER",workdir="$WORK" \
   "$TARGET"
 
 # ------------------------------
-# 4️⃣ Copy original files if not already in overlay
+# 5️⃣ Copy original files if missing
 # ------------------------------
 for file in AcInputWidget.qml AcLoadsWidget.qml; do
     if [ ! -f "$UPPER/$file" ]; then
@@ -37,7 +52,7 @@ for file in AcInputWidget.qml AcLoadsWidget.qml; do
 done
 
 # ------------------------------
-# 5️⃣ Insert edit into AcInputWidget.qml after ThreePhaseDisplay block
+# 6️⃣ Edit AcInputWidget.qml (after ThreePhaseDisplay block)
 # ------------------------------
 ACINPUT="$UPPER/AcInputWidget.qml"
 
@@ -89,7 +104,7 @@ flag && /^\s*}\s*$/ {print; print block; flag=0; next}1
 echo "✅ AcInputWidget.qml edited correctly."
 
 # ------------------------------
-# 6️⃣ Insert edit into AcLoadsWidget.qml above ThreePhaseDisplay block
+# 7️⃣ Edit AcLoadsWidget.qml (above ThreePhaseDisplay block)
 # ------------------------------
 ACLOADS="$UPPER/AcLoadsWidget.qml"
 
@@ -138,9 +153,9 @@ EOB
 echo "✅ AcLoadsWidget.qml edited successfully."
 
 # ------------------------------
-# 7️⃣ Restart GUI
+# 8️⃣ Restart GUI
 # ------------------------------
 svc -t /service/gui-v2
 svc -t /service/start-gui
 
-echo "🎉 All edits applied. GUI restarted successfully."
+echo "🎉 All edits applied. GUI restarted successfully!"
