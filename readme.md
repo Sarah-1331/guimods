@@ -21,29 +21,35 @@ SSH into your Venus OS device and run the following commands:
 ```bash
 # Download the installer
 wget https://raw.githubusercontent.com/Sarah-1331/guimods/main/install_widgets.sh -O /data/install_widgets.sh
+```
 
+```
 # Make it executable
 chmod +x /data/install_widgets.sh
+```
 
+```
 # Run the installer
 bash /data/install_widgets.sh
+```
 
 
 
-🗑️ Uninstall / Reset
+# 
 
-To remove the custom overlay and revert to the original wigets:
+## 🔹 Restore the orignals
+
+### 1️⃣ **Use a small temporary script to remove **
+
+```bash
+wget https://raw.githubusercontent.com/Sarah-1331/guimods/main/remove.sh -O /data/remove.sh
+bash /data/remove.sh
+```
+---
 
 
 
-# Restore the orignals 
-cd /opt/victronenergy/gui-v2/Victron/VenusOS/components/widgets && \
-for f in AcInputWidget.qml AcLoadsWidget.qml; do \
-  [ -f "$f" ] && cp "$f" "$f.pre-restore-$(date +%Y%m%d-%H%M%S)"; \
-  b=$(ls -t "$f".bak-* 2>/dev/null | head -n1) && \
-  [ -n "$b" ] && cp "$b" "$f"; \
-done && \
-svc -t /service/gui-v2 && svc -t /service/start-gui
+Just say the word 👍
 
 
 
