@@ -32,7 +32,7 @@ bash /data/install_widgets.sh
 
 🗑️ Uninstall / Reset
 
-To remove the custom overlay and revert to the original status bar:
+To remove the custom overlay and revert to the original wigets:
 
 
 
