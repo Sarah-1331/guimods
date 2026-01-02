@@ -1,60 +1,49 @@
 #!/bin/bash
-# Venus OS Widgets Overlay Installer - robust version
-# Installs overlay-fs if needed, then applies custom GUI edits safely
+# Venus OS Widgets Direct Installer (NO overlay-fs)
+# Safely edits factory QML files with timestamped backups in-place
 
-OVERLAY_NAME="widgets-overlay"
-OVERLAY_BASE="/data/apps/overlay-fs/data/$OVERLAY_NAME"
-UPPER="$OVERLAY_BASE/upper"
-WORK="$OVERLAY_BASE/work"
-TARGET="/opt/victronenergy/gui-v2/Victron/VenusOS/components/widgets"
+set -e
 
-echo "🚀 Starting Venus OS Widgets Overlay Installer..."
+TARGET_DIR="/opt/victronenergy/gui-v2/Victron/VenusOS/components/widgets"
+FILES=("AcInputWidget.qml" "AcLoadsWidget.qml")
+TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
+
+echo "🚀 Starting Venus OS Widgets Direct Installer (no overlay-fs)"
 
 # ------------------------------
-# 1️⃣ Check for overlay-fs
+# 1️⃣ Verify target directory
 # ------------------------------
-if [ ! -d /data/apps/overlay-fs ]; then
-    echo "⚠ overlay-fs not found. Installing overlay-fs..."
-    
-    wget -q https://raw.githubusercontent.com/victronenergy/venus-overlay-fs/main/install.sh -O /data/install-overlay-fs.sh
-    chmod +x /data/install-overlay-fs.sh
-    bash /data/install-overlay-fs.sh
-    
-    echo "✅ overlay-fs installed."
-else
-    echo "✅ overlay-fs already installed."
+if [ ! -d "$TARGET_DIR" ]; then
+    echo "❌ Target directory not found: $TARGET_DIR"
+    exit 1
 fi
 
-# ------------------------------
-# 2️⃣ Add overlay for widgets
-# ------------------------------
-bash /data/apps/overlay-fs/add-app-and-directory.sh "$OVERLAY_NAME" "$TARGET"
+cd "$TARGET_DIR"
 
 # ------------------------------
-# 3️⃣ Create overlay directories
+# 2️⃣ Backup originals (in-place)
 # ------------------------------
-mkdir -p "$UPPER" "$WORK"
+for file in "${FILES[@]}"; do
+    if [ ! -f "$file" ]; then
+        echo "❌ Missing file: $file"
+        exit 1
+    fi
 
-# ------------------------------
-# 4️⃣ Mount overlay manually
-# ------------------------------
-mount -t overlay overlay \
-  -o lowerdir="$TARGET",upperdir="$UPPER",workdir="$WORK" \
-  "$TARGET"
+    BACKUP="${file}.bak-${TIMESTAMP}"
 
-# ------------------------------
-# 5️⃣ Copy original files if missing
-# ------------------------------
-for file in AcInputWidget.qml AcLoadsWidget.qml; do
-    if [ ! -f "$UPPER/$file" ]; then
-        cp "$TARGET/$file" "$UPPER/"
+    if [ ! -f "$BACKUP" ]; then
+        cp "$file" "$BACKUP"
+        echo "🕒 Backup created: $BACKUP"
+    else
+        echo "ℹ Backup already exists: $BACKUP"
     fi
 done
 
 # ------------------------------
-# 6️⃣ Edit AcInputWidget.qml (after ThreePhaseDisplay block)
+# 3️⃣ Patch AcInputWidget.qml
+#    (insert AFTER ThreePhaseDisplay block)
 # ------------------------------
-ACINPUT="$UPPER/AcInputWidget.qml"
+ACINPUT="AcInputWidget.qml"
 
 awk -v block="$(cat <<'EOB'
 
@@ -96,17 +85,18 @@ Label {
 //end edit//
 EOB
 )" '
-# Flag for detecting ThreePhaseDisplay closing
 /extraContentLoader\.sourceComponent: ThreePhaseDisplay/ {flag=1}
-flag && /^\s*}\s*$/ {print; print block; flag=0; next}1
-' "$ACINPUT" > tmp && mv tmp "$ACINPUT"
+flag && /^\s*}\s*$/ {print; print block; flag=0; next}
+1
+' "$ACINPUT" > "${ACINPUT}.tmp" && mv "${ACINPUT}.tmp" "$ACINPUT"
 
-echo "✅ AcInputWidget.qml edited correctly."
+echo "✅ AcInputWidget.qml patched"
 
 # ------------------------------
-# 7️⃣ Edit AcLoadsWidget.qml (above ThreePhaseDisplay block)
+# 4️⃣ Patch AcLoadsWidget.qml
+#    (insert BEFORE ThreePhaseDisplay block)
 # ------------------------------
-ACLOADS="$UPPER/AcLoadsWidget.qml"
+ACLOADS="AcLoadsWidget.qml"
 
 awk -v block="$(cat <<'EOB'
 
@@ -147,15 +137,17 @@ Label {
 //end edit//
 EOB
 )" '
-/extraContentLoader\.sourceComponent: ThreePhaseDisplay/ {print block}1
-' "$ACLOADS" > tmp && mv tmp "$ACLOADS"
+/extraContentLoader\.sourceComponent: ThreePhaseDisplay/ {print block}
+1
+' "$ACLOADS" > "${ACLOADS}.tmp" && mv "${ACLOADS}.tmp" "$ACLOADS"
 
-echo "✅ AcLoadsWidget.qml edited successfully."
+echo "✅ AcLoadsWidget.qml patched"
 
 # ------------------------------
-# 8️⃣ Restart GUI
+# 5️⃣ Restart GUI
 # ------------------------------
+echo "🔄 Restarting GUI..."
 svc -t /service/gui-v2
 svc -t /service/start-gui
 
-echo "🎉 All edits applied. GUI restarted successfully!"
+echo "🎉 Done! Factory files modified safely with timestamped backups."
