@@ -1,53 +1,93 @@
 #!/bin/bash
-# Venus OS Widgets Overlay Installer
-# Safely edits factory QML files using overlay-fs
+# Venus OS Widgets Direct Installer (NO overlay-fs)
+# Safely edits factory QML files with timestamped backups in-place
+
+# ------------------------------
+# Overlay-aware widgets path logic
+# ------------------------------
+
+
 
 set -e
 
-# ------------------------------
-# 0️⃣ Overlay paths
-# ------------------------------
-OVERLAY_ROOT="/data/apps/overlay-fs/data/gui-v2/upper"
-SYSTEM_ROOT="/opt/victronenergy/gui-v2/Victron/VenusOS/components/widgets"
+ORIG_WIDGET_DIR="/opt/victronenergy/gui-v2/Victron/VenusOS/components/widgets"
+OVERLAY_UPPER="/data/apps/overlay-fs/data/gui-v2/upper"
+OVERLAY_WIDGET_DIR="$OVERLAY_UPPER/Victron/VenusOS/components/widgets"
 
+FILES=("AcInputWidget.qml" "AcLoadsWidget.qml")
+
+if [ -d "$OVERLAY_UPPER" ]; then
+    echo "✅ Overlay upper found, using overlay widgets."
+
+    # Ensure full directory structure exists
+    mkdir -p "$OVERLAY_WIDGET_DIR"
+
+    # Copy BOTH widget files if missing
+    for file in "${FILES[@]}"; do
+        if [ ! -f "$OVERLAY_WIDGET_DIR/$file" ]; then
+            cp "$ORIG_WIDGET_DIR/$file" "$OVERLAY_WIDGET_DIR/$file" || {
+                echo "❌ Failed to copy $file to overlay"
+                exit 1
+            }
+            echo "📝 Copied $file to overlay."
+        else
+            echo "ℹ $file already exists in overlay."
+        fi
+    done
+
+    TARGET_DIR="$OVERLAY_WIDGET_DIR"
+else
+    echo "⚠ Overlay not found, using original widgets."
+    TARGET_DIR="$ORIG_WIDGET_DIR"
+fi
+
+
+
+
+
+
+
+
+TARGET_DIR="/opt/victronenergy/gui-v2/Victron/VenusOS/components/widgets"
 FILES=("AcInputWidget.qml" "AcLoadsWidget.qml")
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 
-echo "🚀 Starting Venus OS Widgets Overlay Installer"
+echo "🚀 Starting Venus OS Widgets Direct Installer (no overlay-fs)"
 
 # ------------------------------
-# 1️⃣ Verify overlay path
+# 1️⃣ Verify target directory
 # ------------------------------
-if [ ! -d "$OVERLAY_ROOT" ]; then
-    echo "❌ Overlay root not found: $OVERLAY_ROOT"
+if [ ! -d "$TARGET_DIR" ]; then
+    echo "❌ Target directory not found: $TARGET_DIR"
     exit 1
 fi
 
+cd "$TARGET_DIR"
+
 # ------------------------------
-# 2️⃣ Process each file
+# 2️⃣ Backup originals (in-place)
 # ------------------------------
 for file in "${FILES[@]}"; do
-    ORIG_FILE="$SYSTEM_ROOT/$file"
-    OVERLAY_DIR="$OVERLAY_ROOT"
-    OVERLAY_FILE="$OVERLAY_DIR/$file"
-
-    # Create overlay directory if it doesn't exist
-    mkdir -p "$OVERLAY_DIR"
-
-    # Copy original file if it doesn't exist yet in overlay
-    if [ ! -f "$OVERLAY_FILE" ]; then
-        cp "$ORIG_FILE" "$OVERLAY_FILE"
-        echo "🕒 Copied original to overlay: $OVERLAY_FILE"
-    else
-        echo "ℹ Overlay copy already exists: $OVERLAY_FILE"
+    if [ ! -f "$file" ]; then
+        echo "❌ Missing file: $file"
+        exit 1
     fi
 
+    BACKUP="${file}.bak-${TIMESTAMP}"
+
+    if [ ! -f "$BACKUP" ]; then
+        cp "$file" "$BACKUP"
+        echo "🕒 Backup created: $BACKUP"
+    else
+        echo "ℹ Backup already exists: $BACKUP"
+    fi
 done
 
 # ------------------------------
-# 3️⃣ Patch AcInputWidget.qml (overlay)
+# 3️⃣ Patch AcInputWidget.qml
+#    (insert AFTER ThreePhaseDisplay block)
 # ------------------------------
-ACINPUT="$OVERLAY_ROOT/AcInputWidget.qml"
+ACINPUT="AcInputWidget.qml"
 
 awk -v block="$(cat <<'EOB'
 
@@ -94,12 +134,13 @@ flag && /^\s*}\s*$/ {print; print block; flag=0; next}
 1
 ' "$ACINPUT" > "${ACINPUT}.tmp" && mv "${ACINPUT}.tmp" "$ACINPUT"
 
-echo "✅ AcInputWidget.qml patched (overlay)"
+echo "✅ AcInputWidget.qml patched"
 
 # ------------------------------
-# 4️⃣ Patch AcLoadsWidget.qml (overlay)
+# 4️⃣ Patch AcLoadsWidget.qml
+#    (insert BEFORE ThreePhaseDisplay block)
 # ------------------------------
-ACLOADS="$OVERLAY_ROOT/AcLoadsWidget.qml"
+ACLOADS="AcLoadsWidget.qml"
 
 awk -v block="$(cat <<'EOB'
 
@@ -144,7 +185,7 @@ EOB
 1
 ' "$ACLOADS" > "${ACLOADS}.tmp" && mv "${ACLOADS}.tmp" "$ACLOADS"
 
-echo "✅ AcLoadsWidget.qml patched (overlay)"
+echo "✅ AcLoadsWidget.qml patched"
 
 # ------------------------------
 # 5️⃣ Restart GUI
@@ -153,4 +194,4 @@ echo "🔄 Restarting GUI..."
 svc -t /service/gui-v2
 svc -t /service/start-gui
 
-echo "🎉 Done! Overlay modifications applied safely."
+echo "🎉 Done! Factory files modified safely with timestamped backups."
