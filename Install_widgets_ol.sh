@@ -41,15 +41,6 @@ else
     TARGET_DIR="$ORIG_WIDGET_DIR"
 fi
 
-
-
-
-
-
-
-
-TARGET_DIR="/opt/victronenergy/gui-v2/Victron/VenusOS/components/widgets"
-FILES=("AcInputWidget.qml" "AcLoadsWidget.qml")
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 
 echo "🚀 Starting Venus OS Widgets Direct Installer (no overlay-fs)"
