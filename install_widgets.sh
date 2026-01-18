@@ -57,7 +57,7 @@ VeQuickItem {
     uid: "dbus/com.victronenergy.vebus.ttyS4/Ac/Out/L1/F"
 }
 
-// --- DERIVED AC INPUT CURRENT (Victron-style estimate) ---
+// --- DERIVED AC INPUT CURRENT ---
 Label {
     id: derivedInputCurrent
 
