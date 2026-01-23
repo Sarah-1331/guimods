@@ -179,10 +179,9 @@ EOB
 echo "✅ AcLoadsWidget.qml patched"
 
 # ------------------------------
-# 5️⃣ Restart GUI
+# 5️⃣ Reboot
 # ------------------------------
-echo "🔄 Restarting GUI..."
-svc -t /service/gui-v2
-svc -t /service/start-gui
+echo "🔄 Rebooting ..."
+sleep 10 && reboot
 
 echo "🎉 Done! Factory files modified safely with timestamped backups."
